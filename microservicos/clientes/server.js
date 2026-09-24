@@ -41,9 +41,7 @@ app.post("/clientes", async (req, res) => {
 
         res.status(201).json(resultado.rows[0]);
     } catch (erro) {
-        res.status(500).json({
-            erro: "Erro ao criar cliente"
-        });
+        res.status(500).json(erro);
     }
 });
 

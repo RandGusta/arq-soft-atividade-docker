@@ -3,14 +3,14 @@ POST http://localhost:3000/clientes
 Content-Type: application/json
 
 {
-  "nome": "Marcos",
+  "nome": "0000",
   "sobrenome": "Silva",
   "telefone": "44 99999999",
-  "email": "teste@gmail.com"
+  "email": "800@gmail.com"
 }
 
 ### GET cliente
-GET http://localhost:3000/clientes/4
+GET http://localhost:3000/clientes/3
 Content-Type: application/json
 
 

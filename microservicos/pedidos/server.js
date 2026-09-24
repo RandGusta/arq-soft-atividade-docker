@@ -6,6 +6,9 @@ const app = express();
 
 const PRODUTOS_URL =
     process.env.PRODUTOS_URL || "http://localhost:3001";
+const CLIENTES_URL =
+    process.env.CLIENTES_URL || "http://localhost:3003";
+
 
 app.use(express.json());
 
@@ -72,23 +75,37 @@ app.get("/pedidos", async (req, res) => {
 });*/
 
 app.post("/pedidos", async (req, res) => {
-    const { produtoId, quantidade } = req.body;
+    const { produtoId, clienteId, quantidade } = req.body;
 
     if (!produtoId || !quantidade || quantidade <= 0) {
         return res.status(400).json({
             erro: "produtoId e quantidade válida são obrigatórios"
         });
     }
+    
+    if (!clienteId){
+        return res.status(404).json({
+            erro: "cliente não encontrado"
+        })
+    }
 
     try {
-        const resposta = await axios.get(
+        const respostaCliente = await axios.get(
+             `${CLIENTES_URL}/clientes/${clienteId}`,
+            {
+                timeout: 3000
+            }
+        );
+
+        const respostaProduto = await axios.get(
             `${PRODUTOS_URL}/produtos/${produtoId}`,
             {
                 timeout: 3000
             }
         );
 
-        const produto = resposta.data;
+        const cliente = respostaCliente.data.id
+        const produto = respostaProduto.data;
         const total = produto.preco * quantidade;
 
         const resultado = await db.query(
@@ -97,16 +114,18 @@ app.post("/pedidos", async (req, res) => {
         nome_produto,
         preco_unitario,
         quantidade,
-        total
+        total,
+        cliente_id
       )
-      VALUES ($1, $2, $3, $4, $5)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *`,
             [
                 produto.id,
                 produto.nome,
                 produto.preco,
                 quantidade,
-                total
+                total,
+                cliente
             ]
         );
 
@@ -114,13 +133,13 @@ app.post("/pedidos", async (req, res) => {
     } catch (erro) {
         if (erro.response?.status === 404) {
             return res.status(400).json({
-                erro: "Produto não encontrado"
+                erro
             });
         }
 
         if (erro.code === "ECONNREFUSED" || erro.code === "ECONNABORTED") {
             return res.status(503).json({
-                erro: "Serviço de Produtos indisponível"
+              erro
             });
         }
 
@@ -177,7 +196,8 @@ async function criarTabela() {
         nome_produto VARCHAR(100) NOT NULL,
         preco_unitario NUMERIC(10, 2) NOT NULL,
         quantidade INTEGER NOT NULL,
-        total NUMERIC(10, 2) NOT NULL
+        total NUMERIC(10, 2) NOT NULL,
+        cliente_id INTEGER NOT NULL
         )
     `);
 
